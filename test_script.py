@@ -12,6 +12,7 @@ import matplotlib.pyplot as plt
 if __name__=="__main__":
 
     A = np.array([[769.464978558294,0,635.224289485861],[0,768.751988580164,491.728901817741],[0,0,1]])
+   
     data_file = '/home/ben/experiment-analysis/spin_test2_2014_Aug_28/PoseLog.csv'
     time_file = '/home/ben/experiment-analysis/spin_test2_2014_Aug_28/timestamps.txt'
     roi_file =  '/home/ben/experiment-analysis/spin_test2_2014_Aug_28/good_data.csv'
@@ -34,13 +35,30 @@ if __name__=="__main__":
     
     data_dict = ts.extract_time_series(data_dict,roi)
       
-    plt.figure(2)
+    plt.figure(3)
+    plt.plot(data_dict['x'],data_dict['y'])
+    
+    #Convert Y data
+
+    data_dict = ts.transform_data(data_dict,['y'],np.atleast_2d(-1),np.atleast_2d(1))
+    
+    plt.figure(4)
     plt.plot(data_dict['x'],data_dict['y'])
     
     ts.timeseries_to_csv(data_dict,test_file) 
     headers, num_headers = ts.check_headers(test_file)
     new_data = np.genfromtxt(test_file,delimiter=',',skip_header=1)
-    new_data_dict = ts.mrx_to_dict(new_data,headers[0])
+    new_data_dict = ts.mrx_to_dict(new_data,headers[0]) #note this is still in pixel coordiantes
     
-    plt.figure(4)
+    plt.figure(5)
     plt.plot(new_data_dict['x'],new_data_dict['y'])
+    
+    plt.figure(6)
+    plt.plot(new_data_dict['time'],new_data_dict['qz'])
+    
+    new_data_dict['qz'] *= -1 
+    new_data_dict['qz'] = ts.remove_sign_outliers(new_data_dict['qz'],region = 1,threshold=0.1)
+    plt.figure(7)
+    plt.plot(new_data_dict['time'],new_data_dict['qz'])
+    
+    

@@ -17,7 +17,7 @@ def is_number(s):
     except ValueError:
         return False
 '''IO '''
-def check_headers(filename, ):
+def check_headers(filename ):
     """Reports the headers for filename.
     
     :param filename: path for the file 
@@ -74,16 +74,21 @@ def mrx_to_dict(data,keys,data_dict={}):
     return data_dict
     
      
-def transform_mrx(X,A):
+def transform_mrx(X,A,B=0):
     """
     Transforms a set of 3 coordinates by a matrix
     """
+    if B is 0:
+        B = np.zeros(np.shape(X))
+    X = np.atleast_2d(X)
+    A = np.atleast_2d(A)
+    B = np.atleast_2d(B)
     d = np.size(A,1)
     if np.size(X,0) is not d and np.size(X,1) is d:
         X = np.transpose(X)
     elif np.size(X,0) is not d and np.size(X,1) is not d:
         raise TypeError("wrong dimensions")
-    y = np.dot(A,X)
+    y = np.dot(A,X)+B
     return y
     
             
@@ -106,9 +111,12 @@ def data_to_mrx(data_dict,keys):
     
 
     
-def transform_data(data_dict,keys,A):
+def transform_data(data_dict,keys,A,B=0):
+    '''
+    Performs an affine transform AX+B where X is located in keys of data_dict
+    '''
     X = data_to_mrx(data_dict,keys)
-    mrx = transform_mrx(X,A)
+    mrx = transform_mrx(X,A,B)
     data_dict = mrx_to_dict(mrx,keys,data_dict)
     return data_dict
     
@@ -123,7 +131,26 @@ def extract_time_series(data_dict,interval):
         data_dict[key] = data_dict[key][np.logical_and(t > interval[0], t < interval[1])]
     return data_dict
     
+def remove_sign_outliers(data,region=1,scale=1,threshold = 0.05, method=-1):
+    '''
+    removes the outliers from a timeseries
+    '''
+    
+    for i in range(region,len(data)-region):
+        #only check when things aren't very close to zero
+        if np.abs(data[i]) > threshold*scale:
+            if np.sign(np.mean(np.sign(data[i-region:i]))) != np.sign(data[i]) \
+            and np.sign(np.mean(np.sign(data[i-region:i]))) != np.sign(data[i+region]):
+                if method is -1:
+                    data[i] *= -1
+    return data
+            
+            
+    
 def remap_to_time(data_dict):
+    '''
+    Makes sure the time in timeseries data has the right identifier
+    '''
     eq_keys = ['t','timeseries','timestamp','# time'] #this should be a regexp
     for key in eq_keys:
         if key in data_dict:
